@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useCallback } from 'react';
 import {
   ScrollView,
   View,
@@ -8,8 +8,9 @@ import {
 } from 'react-native';
 import { HeaderButtons, Item } from 'react-navigation-header-buttons';
 import Header from '../Components/Header'
-import { MEALS } from '../Data/Dummy-Data';
-
+import { useSelector, useDispatch } from "react-redux";
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { toggleFavorite } from '../Store/actions/mealsAction';
 
 const ListItem = props => {
   return (
@@ -21,46 +22,54 @@ const ListItem = props => {
 
 const MealDetailScreen = props => {
   const mealID = props.navigation.getParam('mealID');
+  const availableMeals = useSelector(state => state.meals.meals)
+  const selectedMeal = availableMeals.find(meal => meal.id === mealID);
+  const dispatch = useDispatch();
 
-  const selectedMeal = MEALS.find(meal => meal.id === mealID);
+  const toggleFavHandler = useCallback(() =>{
+    dispatch(toggleFavorite(mealID))
+  },[dispatch,mealID])
+
+  useEffect(() => {
+    props.navigation.setParams({ toggleFav : toggleFavHandler})
+  }, [toggleFavHandler])
+
   return (
     <ScrollView>
       <Image source={{ uri: selectedMeal.imageUrl }} style={styles.image} />
       <View style={styles.details}>
-        <Text>{selectedMeal.duration}m</Text>
-        <Text>{selectedMeal.complexity.toUpperCase()}</Text>
-        <Text>{selectedMeal.affordability.toUpperCase()}</Text>
+        <Text style={styles.mealInfo}>{selectedMeal.complexity.toUpperCase()}</Text>
+        <Text style={styles.mealInfo}>{selectedMeal.duration}m</Text>
+        <Text style={styles.mealInfo}>{selectedMeal.affordability.toUpperCase()}</Text>
       </View>
       <Text style={styles.title}>Ingredients</Text>
       {selectedMeal.ingredients.map(ingredient => (
-        <ListItem key={ingredient}>{ingredient}</ListItem>
+        <ListItem key={ingredient}><MaterialCommunityIcons name="solid" size={10} color="black" /> {" ".repeat(5) + ingredient}</ListItem>
       ))}
       <Text style={styles.title}>Steps</Text>
       {selectedMeal.steps.map(step => (
-        <ListItem key={step}>{step}</ListItem>
-      ))}
+        <ListItem key={step}><MaterialCommunityIcons name="solid" size={10} color="black" /> {" ".repeat(5) + step}</ListItem>
+      ))} 
     </ScrollView>
   );
 };
 
 MealDetailScreen.navigationOptions = navigationData => {
-  const mealId = navigationData.navigation.getParam('mealID');
-  const selectedMeal = MEALS.find(meal => meal.id === mealId);
+  const toggleFavorite = navigationData.navigation.getParam('toggleFav')
+  const mealTitle = navigationData.navigation.getParam('mealTitle')
   return {
-    headerTitle: selectedMeal.title,
+    headerTitle: mealTitle,
     headerRight: () => (
       <HeaderButtons HeaderButtonComponent={Header}>
         <Item
           title="Favorite"
-          iconName="ios-star"
-          onPress={() => {
-            console.log('Mark as favorite!');
-          }}
+          iconName="ios-star-outline"
+          onPress={toggleFavorite}
         />
       </HeaderButtons>
     )
   };
-}; 
+};
 
 const styles = StyleSheet.create({
   image: {
@@ -69,8 +78,10 @@ const styles = StyleSheet.create({
   },
   details: {
     flexDirection: 'row',
-    padding: 15,
-    justifyContent: 'space-around'
+    padding: 10,
+    justifyContent: 'space-around',
+    borderWidth: 1,
+    marginBottom: 20
   },
   title: {
     fontSize: 22,
@@ -78,12 +89,16 @@ const styles = StyleSheet.create({
     fontFamily: 'jost-semi-bold'
   },
   listItem: {
-    marginVertical: 10,
+    marginVertical: 5,
     marginHorizontal: 20,
-    borderColor: '#ccc',
-    borderWidth: 1,
+    // borderColor: '#ccc',
+    // borderWidth: 1,
     padding: 10,
-    fontFamily:'jost-regular'
+    fontFamily: 'jost-regular'
+  },
+  mealInfo:{
+    fontFamily: 'jost-regular',
+    fontSize: 20
   }
 });
 
